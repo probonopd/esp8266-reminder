@@ -3,6 +3,12 @@
 The reminder will remind the user to do certain tasks, based on events in a online calendar.
 The user can confirm that tasks are done by pressing a button.
 
+## Hardware
+
+* WeMos NodeMCU ESP8266 board (or similar)
+* Speaker or buzzer
+* 16x2 lines display with i2c "backpack"
+
 ## Theory of operation
 
 1. When the device is powered on, it connects to the WLAN. During this time, it shows "..." on the display
