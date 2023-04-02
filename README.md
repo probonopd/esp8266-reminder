@@ -63,7 +63,7 @@ __NOTE:__ On FreeBSD, flashing with CH340 is [not working](https://github.com/es
 
 ## Configuring
 
-Configuration is done via the web using a simple text format. It can be entered into the device, or can be loaded from a URL that is entered instead:
+Configuration is done via the web interface on the device using a simple text format.
 
 ```
 # Will be advertised to the network under this name
@@ -101,12 +101,13 @@ telnet hostname.local
 
 Contributions are welcome.
 
-- [ ] Use a Pub/sub protocol (if we can make it as robust)
+- [ ] Use a Pub/sub protocol (if we can make it robust enough)
 - [ ] Be able to trigger tasks at other times than every half hour
 - [ ] Energy saving
 - [ ] Play sounds and spoken messages via a i2s DAC
 - [ ] Upload diagnostics
 - [ ] Use a PIR sensor
+- [ ] Allow for OTA and configuration changes over the air (if we can make it robust enough)
 - [ ] ...
 
 Also see
