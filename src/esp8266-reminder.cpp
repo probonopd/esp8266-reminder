@@ -451,18 +451,6 @@ void get_next_event() {
   Serial.print("First event: ");
   event_title = doc["events"][0]["title"].as<const char *>();
 
-  // Load all events into an array
-  int i = 0;
-  for (JsonObject event : doc["events"].as<JsonArray>()) {
-    event_title = event["title"];
-    event_description = event["description"];
-    event_minutesFromNow = event["minutesFromNow"];
-    events[i][0] = event_title;
-    events[i][1] = event_description;
-    events[i][2] = String(event_minutesFromNow);
-    i++;
-  }
-
   // Show event on LCD
   if (event_title != "") {
     Serial.println(event_title);
