@@ -15,6 +15,7 @@ The user can confirm that tasks are done by pressing a button.
 1. Once the user confirms that the task is done by pressing the button, the task gets confirmed via the API
 1. This results in a second event in the Google calendar with the same name as the original event plus "done" in the title and at the same time as the original event; in the description of that event one can see at which time the task was confirmed
 1. Every half hour (at 0 minutes and at 30 minutes past the hour plus a few seconds), the device restarts and everything begins again
+1. There is a web interface for configuration and for updating the firmware over the air
 
 ## Goals
 
@@ -98,6 +99,9 @@ Contributions are welcome.
 - [ ] Be able to trigger tasks at other times than every half hour
 - [ ] Energy saving
 - [ ] Play sounds and spoken messages via a i2s DAC
+- [ ] Upload diagnostics
+- [ ] Use a PIR sensor
+- [ ] ...
 
 Also see
 
