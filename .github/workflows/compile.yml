@@ -1,4 +1,4 @@
-name: Build with PlatformIO for ESP32
+name: Build with PlatformIO for ESP8266
 
 on:
   push:
