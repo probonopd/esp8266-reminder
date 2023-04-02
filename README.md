@@ -1,4 +1,4 @@
-# esp8266-reminder [![Build Status](https://github.com/probonopd/esp32-i2s-reminder/actions/workflows/compile.yml/badge.svg)](https://github.com/probonopd/esp32-i2s-reminder/actions/workflows/compile.yml)
+# esp8266-reminder [![Build Status](https://github.com/probonopd/esp8266-reminder/actions/workflows/compile.yml/badge.svg)](https://github.com/probonopd/esp8266-reminder/actions/workflows/compile.yml)
 
 The reminder will remind the user to do certain tasks, based on events in a online calendar.
 The user can confirm that tasks are done by pressing a button.
