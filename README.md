@@ -3,6 +3,25 @@
 The reminder will remind the user to do certain tasks, based on events in a online calendar.
 The user can confirm that tasks are done by pressing a button.
 
+## Theory of operation
+
+1. When the device is powered on, it connects to the WLAN. During this time, it shows "..." on the display
+1. If it cannot connect to the WLAN, it opens an access point for configuration
+1. Once it is connected successfully, it shows the IP address for a few seconds
+1. It asks a Google Apps Script web app ("API") for any tasks that are due within the next 30 minutes time window
+1. The API is defined in `Code.cs`, runs on demand on Google servers, and uses Google Calendar events as its backing store
+1. If the API responds with at least one task, then it plays a rintone (in RTTTL format), switches the screen backlight on, and displays the name of the task
+1. It repeats playing the ringtone in a configurable interval
+1. Once the user confirms that the task is done by pressing the button, the task gets confirmed via the API
+1. This results in a second event in the Google calendar with the same name as the original event plus "done" in the title and at the same time as the original event; in the description of that event one can see at which time the task was confirmed
+1. Every half hour (at 0 minutes and at 30 minutes past the hour plus a few seconds), the device restarts and everything begins again
+
+## Goals
+
+* Ease of use: Only one button, no confusing messages for the user
+* Robustness
+* Simplicity
+
 ## System Requirements
 
 Currently this works only on ESP8266, not on ESP32 due to this [issue](https://github.com/electronicsguy/HTTPSRedirect/issues/7).
@@ -32,6 +51,8 @@ __NOTE:__ On FreeBSD, flashing with CH340 is [not working](https://github.com/es
 | D2                    | Display SDA           |
 | VIN                   | Display VCC           |
 | GND                   | Display GND           |
+| GND                   | Speaker -             |
+| D5                    | Speaker +             |
 
 ## Configuring
 
@@ -43,6 +64,16 @@ name MyReminder
 
 # The backend API URL
 api https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxx_xxxxxx_xxxxxxxxxxxxxxxxxxxxx-x_xxxxxxxxxxxxxxxxxxxxxx/exec
+
+# Define a ringtone in RTTTL format
+ringtone Entertainer:d=4,o=5,b=140:8d,8d#,8e,c6,8e,c6,8e,2c.6,8c6,8d6,8d#6,8e6,8c6,8d6,e6,8b,d6,2c6,p,8d,8d#,8e,c6,8e,c6,8e,2c.6,8p,8a,8g,8f#,8a,8c6,e6,8d6,8c6,8a,2d6
+
+# Set the volume, 0-11
+volume 11
+
+# Set after how many seconds the ringtone is repeated, until the task is confirmed by pressing the button
+repeat 15
+
 ```
 
 ## Debugging
@@ -63,7 +94,10 @@ telnet hostname.local
 
 Contributions are welcome.
 
-- [ ] ...
+- [ ] Use a Pub/sub protocol (if we can make it as robust)
+- [ ] Be able to trigger tasks at other times than every half hour
+- [ ] Energy saving
+- [ ] Play sounds and spoken messages via a i2s DAC
 
 Also see
 
