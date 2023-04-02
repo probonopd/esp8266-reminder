@@ -14,14 +14,17 @@ The user can confirm that tasks are done by pressing a button.
 1. When the device is powered on, it connects to the WLAN. During this time, it shows "..." on the display
 1. If it cannot connect to the WLAN, it opens an access point for configuration
 1. Once it is connected successfully, it shows the IP address for a few seconds
+1. It gets the time from the network via NTP
 1. It asks a Google Apps Script web app ("API") for any tasks that are due within the next 30 minutes time window
 1. The API is defined in `Code.cs`, runs on demand on Google servers, and uses Google Calendar events as its backing store
 1. If the API responds with at least one task, then it plays a rintone (in RTTTL format), switches the screen backlight on, and displays the name of the task
 1. It repeats playing the ringtone in a configurable interval
 1. Once the user confirms that the task is done by pressing the button, the task gets confirmed via the API
 1. This results in a second event in the Google calendar with the same name as the original event plus "done" in the title and at the same time as the original event; in the description of that event one can see at which time the task was confirmed
+1. Thereafter, the device restarts 
 1. Every half hour (at 0 minutes and at 30 minutes past the hour plus a few seconds), the device restarts and everything begins again
 1. There is a web interface for configuration and for updating the firmware over the air
+1. When there is no task that needs to be done, the display is not illuminated but it shows the time
 
 ## Goals
 
@@ -108,6 +111,7 @@ Contributions are welcome.
 - [ ] Upload diagnostics
 - [ ] Use a PIR sensor
 - [ ] Allow for OTA and configuration changes over the air (if we can make it robust enough)
+- [ ] Do not hardcode the timezone to Germany (but allow for flexibility regarding configuring DST)
 - [ ] ...
 
 Also see
