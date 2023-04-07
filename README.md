@@ -32,6 +32,11 @@ __NOTE:__ On FreeBSD, flashing with CH340 is [not working](https://github.com/es
 | D2                    | Display SDA           |
 | VIN                   | Display VCC           |
 | GND                   | Display GND           |
+| D4                    | i2s DAC LRC           |
+| D8                    | i2s DAC BCLK          |
+| RX                    | i2s DAC DIN           |
+| GND                   | i2s DAC GND           |
+| VIN (3V3 = lower vol) | i2s DAC VCC           |
 
 ## Configuring
 

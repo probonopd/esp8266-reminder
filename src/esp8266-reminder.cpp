@@ -92,13 +92,22 @@ LCD_I2C lcd(0x27, 16,
             2); // Default address of most PCF8574 modules, change accordingly
 
 // Buzzer or speaker
-#include <ESP8266RTTTLPlus.h>
-#define BUZZER_PIN D5
+// #include <ESP8266RTTTLPlus.h>
+// #define BUZZER_PIN D5
+
+// Audio, https://github.com/earlephilhower/ESP8266Audio
+#include "AudioFileSourcePROGMEM.h"
+#include "AudioGeneratorRTTTL.h"
+#include "AudioOutputI2S.h"
+AudioGeneratorRTTTL *rtttl;
+AudioFileSourcePROGMEM *file;
+AudioOutputI2S *out;
 
 // Timer
 #include <Ticker.h>
 Ticker timer;
 Ticker clock_timer;
+Ticker reboot_timer;
 
 // OTA update via web interface upload
 #if CONFIG_IDF_TARGET_ESP32
@@ -119,7 +128,7 @@ String api = "";
 String ringtone = "Entertainer:d=4,o=5,b=140:8d,8d#,8e,c6,8e,c6,8e,2c.6,8c6,"
                   "8d6,8d#6,8e6,8c6,8d6,e6,8b,d6,2c6,p,8d,8d#,8e,c6,8e,c6,8e,"
                   "2c.6,8p,8a,8g,8f#,8a,8c6,e6,8d6,8c6,8a,2d6";
-int alarm_volume = 11; // 0-11
+int alarm_volume = 11; // 1-100
 int alarm_repeat_seconds = 30;
 
 // Define the variables to check if the button has been pressed
@@ -290,7 +299,7 @@ void parseConfigurationData() {
       volume.trim();
       println(volume);
       int v = volume.toInt();
-      if (v >= 0 && v <= 11) {
+      if (v >= 1 && v <= 100) {
         preferences.putInt("alarm_volume", v);
       }
     } else if (lines[i].startsWith("repeat ")) {
@@ -359,11 +368,29 @@ void loopTelnet() {
 void off() { Serial.println("off: TO BE IMPLEMENTED"); }
 
 void play_reminder_sound() {
-  e8rtp::stop();  // Stop playing
-  e8rtp::start(); // Play reminder sound
+  serverClient.println(F("Playing sound"));
+  // e8rtp::stop();  // Stop playing
+  // e8rtp::start(); // Play reminder sound
+  // Workaround for: https://github.com/earlephilhower/ESP8266Audio/issues/604
+  // RTTTL ringtone format
+  // https://www.laub-home.de/wiki/RTTTL_Songs
+  // To test: https://adamonsoon.github.io/rtttl-play/
+  ringtone = preferences.getString("ringtone", "");
+  if (ringtone == "") {
+    ringtone =
+        F("Entertainer:d=4,o=5,b=140:8d,8d#,8e,c6,8e,c6,8e,2c.6,8c6,8d6,"
+          "8d#6,8e6,8c6,8d6,e6,8b,d6,2c6,p,8d,8d#,8e,c6,8e,c6,8e,2c.6,8p,"
+          "8a,8g,8f#,8a,8c6,e6,8d6,8c6,8a,2d6");
+  }
+  file = new AudioFileSourcePROGMEM(ringtone.c_str(), ringtone.length());
+  out = new AudioOutputI2S();
+  alarm_volume = preferences.getUInt("alarm_volume", 11);
+  out->SetGain(((float)alarm_volume) / 100.0);
+  rtttl->begin(file, out); // Play reminder sound
 }
 
 void get_next_event() {
+  lcd.setCursor(0, 1);
   api = preferences.getString("api", "");
   if (api.length() == 0) {
     println(F("No API URL found, please configure it in the web interface"));
@@ -384,37 +411,40 @@ void get_next_event() {
   client->setPrintResponseBody(true);
   client->setContentTypeHeader("application/json");
 
-  Serial.println(F("Trying 5 times to connect to host..."));
+  // Serial.println(F("Trying 5 times to connect to host..."));
 
-  // Try to connect 5 times, then exit
-  bool flag = false;
-  for (int i = 0; i < 5; i++) {
-    int retval = client->connect(host, 443);
-    if (retval == 1) {
-      flag = true;
-      break;
-    } else {
-      Serial.println(F("Connection failed. Retrying..."));
-      delay(1000);
-    }
-  }
+  // // Try to connect 5 times, then exit
+  // bool flag = false;
+  // for (int i = 0; i < 5; i++) {
+  //   lcd.print(i);
+  //   int retval = client->connect(host, 443);
+  //   if (retval == 1) {
+  //     flag = true;
+  //     break;
+  //   } else {
+  //     Serial.println(F("Connection failed. Retrying..."));
+  //     // delay(500);
+  //   }
+  // }
 
-  /*
-  On ESP32, we get this error:
-  [  3285][E][ssl_client.cpp:37] _handle_error(): [send_ssl_data():387]:
-  (-27136) SSL - A buffer is too small to receive or write a message
-  https://github.com/electronicsguy/HTTPSRedirect/issues/7
-  On ESP8266, it works fine.
-  */
+  // /*
+  // On ESP32, we get this error:
+  // [  3285][E][ssl_client.cpp:37] _handle_error(): [send_ssl_data():387]:
+  // (-27136) SSL - A buffer is too small to receive or write a message
+  // https://github.com/electronicsguy/HTTPSRedirect/issues/7
+  // On ESP8266, it works fine.
+  // */
 
-  if (!flag) {
-    Serial.print("Could not connect to server: ");
-    Serial.println(host);
-    Serial.println("Exiting...");
-    lcd.setCursor(0, 0);
-    lcd.print("Error 0");
-    return;
-  }
+  // if (!flag) {
+  //   Serial.print("Could not connect to server: ");
+  //   Serial.println(host);
+  //   Serial.println(
+  //       "Exiting..."); // TODO: Should we reboot here after some delay?
+  //   lcd.setCursor(0, 0);
+  //   lcd.clear();
+  //   lcd.print("Error 0");
+  //   return;
+  // }
 
   Serial.println("");
 
@@ -424,9 +454,19 @@ void get_next_event() {
   String pathString = String(path);
   pathString += "?action=listEvents";
   path = pathString.c_str();
-  client->GET(path, host);
-
-  String payload = client->getResponseBody();
+  String payload = "";
+  int i = 0;
+  while (payload == "") {
+    Serial.print("Attempt ");
+    Serial.println(i);
+    client->connect(host, 443);
+    client->GET(path, host);
+    payload = client->getResponseBody();
+    delay(1000);
+    i++;
+    if (i >= 10)
+      break;
+  }
 
   // Parse JSON object
   DynamicJsonDocument doc(1024);
@@ -436,6 +476,7 @@ void get_next_event() {
     Serial.print("deserializeJson() failed: ");
     Serial.println(error.c_str());
     lcd.setCursor(0, 0);
+    lcd.clear();
     lcd.print("Error 1");
     return;
   }
@@ -473,7 +514,8 @@ void get_next_event() {
 }
 
 void confirm_event() {
-  e8rtp::stop(); // Stop event sound
+  // e8rtp::stop(); // Stop event sound
+  rtttl->stop(); // Stop event sound
   timer.detach();
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -538,7 +580,7 @@ void printTime() {
   char timeString[9];
   sprintf(timeString, "%02d:%02d:%02d", hour(local), minute(local),
           second(local));
-  Serial.println(timeString);
+  // Serial.println(timeString);
   lcd.print(timeString);
   lcd.setCursor(0, 0);
 
@@ -556,6 +598,10 @@ void printTime() {
 //                                           S E T U P *
 //**************************************************************************************************
 void setup() {
+
+  // Attach the interrupt to the button pin
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), button_isr_handler,
+                  FALLING);
 
 #if PLATFORMIO_BOARD == esp32cam
   // SD/Mode: Leave this pin alone
@@ -597,19 +643,6 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(WiFi.localIP().toString().c_str());
-  timeClient.begin();
-
-  if (!MDNS.begin(device_name.c_str())) {
-    println(F("Error setting up MDNS responder!"));
-    while (1) {
-      delay(1000);
-    }
-  }
-  println(F("mDNS responder started"));
-
-  // Add services to MDNS-SD
-  MDNS.addService("http", "tcp", 80);
-  MDNS.addService("telnet", "tcp", 23);
 
   // Start the telnet server
   telnetServer.begin();
@@ -630,28 +663,35 @@ void setup() {
   print(F("HTTP server started, listening on IP ")),
       println(WiFi.localIP().toString());
 
+  // reboot_timer.attach(
+  //     60 * 25,
+  //     reboot); // If Google hasn't answered in 25 minutes, we
+  //              // restart so that we don't sit waiting here forever
+  timeClient.begin();
+
+  if (!MDNS.begin(device_name.c_str())) {
+    println(F("Error setting up MDNS responder!"));
+    while (1) {
+      delay(1000);
+    }
+  }
+  println(F("mDNS responder started"));
+
+  // Add services to MDNS-SD
+  MDNS.addService("http", "tcp", 80);
+  MDNS.addService("telnet", "tcp", 23);
+
   // Configure the sound playing, this must be done before calling
   // get_next_event()
-  // RTTTL ringtone format
-  // https://www.laub-home.de/wiki/RTTTL_Songs
-  // To test: https://adamonsoon.github.io/rtttl-play/
-  ringtone = preferences.getString("ringtone", "");
-  if (ringtone == "") {
-    ringtone = "Entertainer:d=4,o=5,b=140:8d,8d#,8e,c6,8e,c6,8e,2c.6,8c6,8d6,"
-               "8d#6,8e6,8c6,8d6,e6,8b,d6,2c6,p,8d,8d#,8e,c6,8e,c6,8e,2c.6,8p,"
-               "8a,8g,8f#,8a,8c6,e6,8d6,8c6,8a,2d6";
-  }
-  e8rtp::setup(BUZZER_PIN, 5, ringtone.c_str());
-  alarm_volume = preferences.getUInt("alarm_volume", 11);
-  e8rtp::setVolume(alarm_volume);
+  rtttl = new AudioGeneratorRTTTL();
+  // e8rtp::setup(BUZZER_PIN, 5, ringtone.c_str());
+  // e8rtp::setVolume(alarm_volume);
 
   // Get the next event; do this after setting up the sound so that the sound
   // will work
   get_next_event();
 
-  // Attach the interrupt to the button pin
-  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), button_isr_handler,
-                  FALLING);
+  // reboot_timer.detach(); // Google has answered
 
   randomized_seconds = random(0, 59);
 
@@ -663,8 +703,12 @@ void setup() {
 //**************************************************************************************************
 void loop() {
 
-  e8rtp::loop(); // This must be called from your main 'loop()', otherwise
-                 // nothing will happen.
+  // e8rtp::loop(); // This must be called from your main 'loop()', otherwise
+  //                // nothing will happen.
+  if (rtttl->isRunning()) {
+    if (!rtttl->loop())
+      rtttl->stop();
+  }
 
   // listen for web requests
   server.handleClient();
