@@ -107,7 +107,7 @@ Contributions are welcome.
 - [ ] Use a Pub/sub protocol (if we can make it robust enough)
 - [ ] Be able to trigger tasks at other times than every half hour
 - [ ] Energy saving
-- [ ] Play sounds and spoken messages via a i2s DAC
+- [ ] Play sounds and spoken messages via a i2s DAC [see `i2s` branch; works occasionally but is very flaky due to some library incompatiblity]
 - [ ] Upload diagnostics
 - [ ] Use a PIR sensor
 - [ ] Allow for OTA and configuration changes over the air (if we can make it robust enough)
